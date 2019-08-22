@@ -75,11 +75,11 @@ $query_builder = TRUE;
 
 $db['default'] = array(
 	'dsn'	=> '',
-	'hostname' => 'localhost',
-	'username' => '',
-	'password' => '',
-	'database' => '',
-	'dbdriver' => 'mysqli',
+	'hostname' => 'localhost',   //localhost   http://192.168.128.123
+	'username' => 'root',    //lee
+	'password' => 'dl4064',
+	'database' => 'ecshop',       //데이터베이스명
+	'dbdriver' => 'mysqli',   //mysqli
 	'dbprefix' => '',
 	'pconnect' => FALSE,
 	'db_debug' => (ENVIRONMENT !== 'production'),
