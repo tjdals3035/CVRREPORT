@@ -65,7 +65,7 @@ class Cvr_Report_Controller extends CI_Controller {
 			<tr>
 			<th width="50px">順位</th>
 			<th width="180px">商品名</th>
-			<th width="70px">総注文数</th>
+			<th width="70px">総注文量</th>
 			</tr>
 		';
 		foreach ($orderInfo as $ls) {
@@ -299,8 +299,155 @@ class Cvr_Report_Controller extends CI_Controller {
 		fclose($myfile);
 	}
 
+	// 保存したファイルからデータを読み込む
+	// http://192.168.128.118/cvr/index.php/Cvr_Report_Controller/readFile/2019-08-20
+	public function readFile($date)
+	{
+		$lines = file('/var/www/html/cvr/cvr_file/CVR_'.$date.'.txt');
+		$txt;
+		foreach($lines as $line) {
+			$txt = $line;
+		}
+		$txtArr = explode(" // ", $txt);
+
+		$categoryArr = array();
+		$varArr = array();  		
+		foreach ($txtArr as $txts) {
+			$txtsArr = explode(" : ", $txts);
+			array_push($categoryArr, $txtsArr[0]) ;
+			array_push($varArr, $txtsArr[1]) ;
+		}
+
+		for ($i=0; $i < sizeof($varArr); $i++) { 
+			echo $categoryArr[$i].' : 「'.$varArr[$i].'」';
+			echo "<br>";
+		}
+	}
+
 	// メールの送信メソッド
 	public function submit_mail()
+	{
+		//today
+		$dateOfToday = date("Y-m-d");
+		//yesterday
+		$dateOfYesterday = date("Y-m-d", strtotime("-1 day", time()));
+
+		//一日前のCVRレポートのデータ取得
+		$this->load->model('Model');
+		$cvrInfo = $this->Model->getCvrInfo_db($dateOfYesterday);
+
+		$subject = $cvrInfo[0]->date.'のCVRレポート ';
+		$message = '
+			<body>
+			<h3>'.'今日の日付「'.$dateOfToday.'」</h3>
+			<table border="1">
+			<tr>
+			<th colspan="2">「'.$cvrInfo[0]->date.'」のCVRレポート'.'</th>
+			</tr>
+			<tr>
+			<th width="150px">PV</th><th width="150px">'.$cvrInfo[0]->count_pv.'</th>
+			</tr>
+			<tr>
+			<th>UU</th><th>'.$cvrInfo[0]->count_uu.'</th>
+			</tr>
+			<tr>
+			<th>注文数</th><th>'.$cvrInfo[0]->count_order.'</th>
+			</tr>
+			<tr>
+			<th>CVR</th><th>'.$cvrInfo[0]->cvr.'％</th>
+			</tr>
+			</table>
+			</body>
+		';
+
+		$rankStr = $this->itemRanking($dateOfYesterday);
+		$message .= $rankStr;
+
+		$flag = true;
+		$num = -1;
+		$theDate = '';
+		// 前営業日が昨日ではない場合
+		while ($flag === true) 
+		{
+			$flagDate = date("Y-m-d", strtotime($num." day", time()));
+			$flagOfHoliday = $this->getHoliday($flagDate);
+
+			// Weekday
+			if($flagOfHoliday === "Weekday") 		
+			{
+				$theDate = $flagDate;
+				$flag = false;
+			} 
+			// Holiday
+			else if($flagOfHoliday === "Holiday") 
+			{
+				$num--;
+			} 
+		}
+		
+		if ($theDate !== '') {
+			$flagDate = date("Y-m-d", strtotime($num." day", time()));
+			$cvrInfo = $this->Model->getCvrInfo_db($flagDate);
+
+			$message = '
+			<body>
+			<h3>'.'今日の日付「'.$dateOfToday.'」</h3>
+			<table border="1">
+			<tr>
+			<th colspan="2">「'.$cvrInfo[0]->date.'」のCVRレポート'.'</th>
+			</tr>
+			<tr>
+			<th width="150px">PV</th><th width="150px">'.$cvrInfo[0]->count_pv.'</th>
+			</tr>
+			<tr>
+			<th>UU</th><th>'.$cvrInfo[0]->count_uu.'</th>
+			</tr>
+			<tr>
+			<th>注文数</th><th>'.$cvrInfo[0]->count_order.'</th>
+			</tr>
+			<tr>
+			<th>CVR</th><th>'.$cvrInfo[0]->cvr.'％</th>
+			</tr>
+			</table>
+			</body>
+		';
+			$rankStr = $this->itemRanking($flagDate);
+			$message .= $rankStr;
+		}
+
+		$this->load->library('email');
+		$config['protocol']    = 'smtp';
+        $config['smtp_host']    = 'ssl://smtp.gmail.com';
+        $config['smtp_port']    = '465';
+        $config['smtp_timeout'] = '7';
+        $config['smtp_user']    = 'lee@estore.co.jp';
+        $config['smtp_pass']    = 'dldl4064@@';
+        $config['charset']    = 'utf-8';
+        $config['newline']    = "\r\n";
+        $config['mailtype'] = 'html'; // or text
+        $config['validation'] = TRUE; // bool whether to validate email or not      
+        $this->email->initialize($config);
+
+        $this->email->from('lee@estore.co.jp', '李省岷');
+  //       $this->email->to(
+	 //        array('tjdals3035@gmail.com', 'lee@estore.co.jp', 'tjdals3035@naver.com')
+		// );
+		$this->email->to(
+	        array('takai@estore.co.jp', 'y-ito@estore.co.jp', 'f-maeda@estore.co.jp', 'yagi@estore.co.jp', 'kumamimi@estore.co.jp', 'm-park@estore.co.jp', 'mi-kim@estore.co.jp', 'lee@estore.co.jp')
+		);
+
+        $this->email->subject('CVRレポート');
+        $this->email->message($message);  
+
+        $send = $this->email->send();
+        if ($send) echo "メール送信成功<br>";
+		else echo "メール送信失敗<br>";
+
+        echo $this->email->print_debugger();
+	}
+
+	// メールの送信メソッド
+	public function submit_mail_test()
 	{
 		//today
 		$dateOfToday = date("Y-m-d");
@@ -424,31 +571,6 @@ class Cvr_Report_Controller extends CI_Controller {
 			$send = mail($to, $subject, $message, $headers);
 			if ($send) echo "メール送信成功<br>";
 			else echo "メール送信失敗<br>";
-		}
-	}
-
-	// 保存したファイルからデータを読み込む
-	// http://192.168.128.118/cvr/index.php/Cvr_Report_Controller/readFile/2019-08-20
-	public function readFile($date)
-	{
-		$lines = file('/var/www/html/cvr/cvr_file/CVR_'.$date.'.txt');
-		$txt;
-		foreach($lines as $line) {
-			$txt = $line;
-		}
-		$txtArr = explode(" // ", $txt);
-
-		$categoryArr = array();
-		$varArr = array();  		
-		foreach ($txtArr as $txts) {
-			$txtsArr = explode(" : ", $txts);
-			array_push($categoryArr, $txtsArr[0]) ;
-			array_push($varArr, $txtsArr[1]) ;
-		}
-
-		for ($i=0; $i < sizeof($varArr); $i++) { 
-			echo $categoryArr[$i].' : 「'.$varArr[$i].'」';
-			echo "<br>";
 		}
 	}
 }
