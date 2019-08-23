@@ -433,7 +433,16 @@ class Cvr_Report_Controller extends CI_Controller {
 	 //        array('tjdals3035@gmail.com', 'lee@estore.co.jp', 'tjdals3035@naver.com')
 		// );
 		$this->email->to(
-	        array('takai@estore.co.jp', 'y-ito@estore.co.jp', 'f-maeda@estore.co.jp', 'yagi@estore.co.jp', 'kumamimi@estore.co.jp', 'm-park@estore.co.jp', 'mi-kim@estore.co.jp', 'lee@estore.co.jp')
+	        array(
+	        	'takai@estore.co.jp', 
+	        	'y-ito@estore.co.jp', 
+	        	'f-maeda@estore.co.jp', 
+	        	'yagi@estore.co.jp', 
+	        	'kumamimi@estore.co.jp', 
+	        	'm-park@estore.co.jp', 
+	        	'mi-kim@estore.co.jp', 
+	        	'lee@estore.co.jp'
+	        )
 		);
 
         $this->email->subject('CVRレポート');
