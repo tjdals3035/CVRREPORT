@@ -420,8 +420,8 @@ class Cvr_Report_Controller extends CI_Controller {
         $config['smtp_host']    = 'ssl://smtp.gmail.com';
         $config['smtp_port']    = '465';
         $config['smtp_timeout'] = '7';
-        $config['smtp_user']    = 'lee@estore.co.jp';
-        $config['smtp_pass']    = 'dldl4064@@';
+        $config['smtp_user']    = ''; // gmail ID
+        $config['smtp_pass']    = ''; // gmail PASSWORD
         $config['charset']    = 'utf-8';
         $config['newline']    = "\r\n";
         $config['mailtype'] = 'html'; // or text
